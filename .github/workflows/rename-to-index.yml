@@ -1,0 +1,18 @@
+name: Rename deploy file to index
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rename uploaded file to index.html
+        run: |
+          git config user.name "ismulei101-code"
+          git config user.email "ismulei101-code@users.noreply.github.com"
+          git rm -q index.html
+          git mv mandiroo-deploy-2026-11-07.html index.html
+          git commit -m "Rename mandiroo-deploy-2026-11-07.html to index.html"
+          git push
