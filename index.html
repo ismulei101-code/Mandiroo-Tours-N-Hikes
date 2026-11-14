@@ -1905,10 +1905,10 @@
         <div class="incl"><span>Round-trip transport</span><span>Guided crater hike</span><span>Boat ride</span><span>Swim stop</span><span>Lake Jipe canoe</span><span>Eco Lodge lunch</span><span>Local guides</span></div>
         <div class="calc" data-calc="family">
           <h4 class="calc-h">Work out your family price</h4>
-          <p class="calc-sub">At Mandiroo, transport sets the price. Tell us who's coming, pick how you'll travel, and see your total — kids under 16 are half price automatically, babies under 3 go free.</p>
+          <p class="calc-sub">At Mandiroo, transport sets the price. Tell us who's coming, pick how you'll travel, and see your total — kids under 16 are half the adult price, with a KES 7,690 minimum per child, babies under 3 go free.</p>
           <div class="calc-fields">
             <label class="calc-field">Adults <span>full price</span><input type="number" class="calc-adults" min="0" max="60" value="" placeholder="0" inputmode="numeric" /></label>
-            <label class="calc-field">Kids under 16 <span>half price</span><input type="number" class="calc-kids" min="0" max="60" value="" placeholder="0" inputmode="numeric" /></label>
+            <label class="calc-field">Kids under 16 <span>from KES 7,690</span><input type="number" class="calc-kids" min="0" max="60" value="" placeholder="0" inputmode="numeric" /></label>
           </div>
           <div class="calc-ts" role="radiogroup" aria-label="Choose how your family will travel">
             <button type="button" class="calc-t is-on" data-t="sgr" role="radio" aria-checked="true"><b>SGR + Private Ride</b><small>Train to Voi, then a private ride to the lakes</small></button>
@@ -2431,7 +2431,7 @@
           <select id="trip">
             <option value="friends" selected>Friends Experience — 6+ friends · 2 days, 2 lakes</option>
             <option value="2day">2-Day Lake Chala &amp; Lake Jipe — price by group size</option>
-            <option value="family">Family Trip — 2-Day · SGR + private ride · children under 16 half price</option>
+            <option value="family">Family Trip — 2-Day · SGR + private ride · children under 16 from KES 7,690</option>
             <option value="day">Lake Chala Day Hike — Was KES 6,000, now KES 5,500 · back the same day</option>
             <option value="couples-sgr">Couples 2-Day — 2 days, 2 lakes · price by transport</option>
             <option value="corp-sgr">Corporate Retreat — Common: SGR + Private Ride</option>
@@ -2734,7 +2734,10 @@
     var babies = num(babiesEl, 0);
     var paying = adults + children;
     var rate = formRate(Math.max(1, paying));
-    var childRate = rate / 2;
+    /* Family Trip kids: half the adult rate, never below KES 7,690 (child
+       cost KES 7,190 + KES 500 minimum profit), never above the adult
+       rate. Other trips keep half price. */
+    var childRate = tripEl.value === "family" ? Math.max(rate / 2, Math.min(7690, rate)) : rate / 2;
     var adultsTotal = adults * rate;
     var childrenTotal = children * childRate;
     var camping = campEl && campEl.value === "yes";
@@ -2749,7 +2752,7 @@
   function breakdownText(c){
     var parts = [];
     if (c.adults) parts.push(c.adults + (c.adults === 1 ? " adult" : " adults") + " × " + fmt(c.rate) + " = " + fmt(c.adultsTotal));
-    if (c.children) parts.push(c.children + (c.children === 1 ? " child" : " children") + " (under 16, half price) × " + fmt(c.childRate) + " = " + fmt(c.childrenTotal));
+    if (c.children) parts.push(c.children + (c.children === 1 ? " child" : " children") + " (under 16) × " + fmt(c.childRate) + " = " + fmt(c.childrenTotal));
     if (c.babies) parts.push(c.babies + (c.babies === 1 ? " baby" : " babies") + " (under 3) — FREE");
     if (c.camping && c.campTotal) parts.push(c.couplesCamp ? "Camping (per couple) = " + fmt(c.campTotal) : "Camping × " + c.paying + " = " + fmt(c.campTotal));
     return parts.join(" · ");
@@ -2876,10 +2879,15 @@
         /* The Couples Mashujaa Offer holds on SGR + private ride:
            Was KES 32,000, now KES 25,000 per couple. */
         var rate = (pkg === PKGS.couples && transport === "sgr") ? 12500 : ppFor(transport, party);
-        var total = adults * rate + kids * (rate / 2);
+        /* Family kids: half the adult rate, but never below KES 7,690 —
+           the child cost is KES 7,190 and Mandiroo keeps at least
+           KES 500 profit per child — and never above the adult rate.
+           Other packages keep the plain half price. */
+        var kidRate = (pkg === PKGS.family) ? Math.max(rate / 2, Math.min(7690, rate)) : rate / 2;
+        var total = adults * rate + kids * kidRate;
         var parts = [];
         parts.push(adults + " " + (adults === 1 ? pkg.unit : pkg.unit + "s") + " × " + fmt(rate) + (pkg.unit === "adult" || pkg.unit === "friend" ? " each" : ""));
-        if (kids) parts.push(kids + (kids === 1 ? " kid" : " kids") + " under 16 × " + fmt(rate / 2) + " (half price)");
+        if (kids) parts.push(kids + (kids === 1 ? " kid" : " kids") + " under 16 × " + fmt(kidRate) + (kidRate === 7690 ? " (KES 7,690 minimum)" : kidRate > rate / 2 ? " (child minimum applies)" : " (half price)"));
         lineEl.textContent = parts.join(" · ") + " — travelling by " + TRANSPORT_NAMES[transport] + ".";
         totalEl.textContent = fmt(total);
         var notes = [];
@@ -3008,7 +3016,7 @@
       "Date: " + when,
       "Adults: " + c.adults + " × " + fmt(c.rate) + " = " + fmt(c.adultsTotal)
     ];
-    if (c.children) lines.push("Children (under 16, half price): " + c.children + " × " + fmt(c.childRate) + " = " + fmt(c.childrenTotal));
+    if (c.children) lines.push("Children (under 16): " + c.children + " × " + fmt(c.childRate) + " = " + fmt(c.childrenTotal));
     if (c.babies) lines.push("Babies (under 3 years): " + c.babies + " — free of charge");
     if (c.camping) lines.push("Camping: " + fmt(c.campTotal) + (c.couplesCamp ? " (per-couple add-on)" : " (per-person add-on)"));
     lines.push("Total: " + fmt(c.total));
